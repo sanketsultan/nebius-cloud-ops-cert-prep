@@ -136,6 +136,62 @@ Three disk types in Nebius Compute:
 
 ## Kubernetes GPU Clusters
 
+### Creating a Managed Kubernetes Cluster
+
+```bash
+nebius mk8s cluster create \
+  --name <cluster_name> \
+  --control-plane-version 1.33 \
+  --control-plane-subnet-id <subnet_id> \
+  --control-plane-endpoints-public-endpoint=true \
+  --control-plane-etcd-cluster-size 3
+```
+
+**Key defaults:**
+- **3 etcd stores** by default — high availability, data survives node failures
+- **Public endpoint enabled** by default — cluster accessible from internet
+- Default and recommended Kubernetes version: **1.33**
+- HA (3 etcd) does **not** add to cluster cost
+
+**Restrict access to specific IPs:**
+```bash
+--control-plane-endpoints-public-endpoint=true \
+--control-plane-endpoints-public-endpoint-allowed-cidrs 192.168.0.0/24
+```
+
+**Disable public endpoint** (connect only from VMs in same subnet):
+```bash
+--control-plane-endpoints-public-endpoint=false
+```
+
+**Get cluster ID by name:**
+```bash
+export K8S_CLUSTER_ID=$(nebius mk8s cluster get-by-name \
+  --name <cluster_name> --format json | jq -r '.metadata.id')
+```
+
+**Mutable after creation:** labels, public endpoint toggle, allowed CIDRs, etcd size
+
+**Immutable (forces cluster recreation):** Kubernetes version, subnet, zone/region
+
+**Terraform resource:**
+```hcl
+resource "nebius_mk8s_v1_cluster" "k8s" {
+  name      = "my-cluster"
+  parent_id = "<project_id>"
+  control_plane = {
+    endpoints = {
+      public_endpoint = {}  # remove this block to disable public access
+    }
+    version           = "1.33"
+    subnet_id         = "<subnet_id>"
+    etcd_cluster_size = 3
+  }
+}
+```
+
+---
+
 ### Setting Up GPU Node Groups
 
 When creating a node group, specify:

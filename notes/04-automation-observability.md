@@ -46,12 +46,14 @@ Benefits: shared state across team, state locking prevents concurrent applies.
 resource "nebius_compute_instance" "gpu_vm" { ... }
 resource "nebius_iam_v1_service_account" "sa" { ... }
 resource "nebius_iam_v1_group_membership" "editors" { ... }
-resource "nebius_kubernetes_cluster" "k8s" { ... }
-resource "nebius_kubernetes_node_group" "gpu_nodes" { ... }
+resource "nebius_mk8s_v1_cluster" "k8s" { ... }        # NOTE: mk8s_v1, not kubernetes_cluster
+resource "nebius_mk8s_v1_node_group" "gpu_nodes" { ... }  # NOTE: mk8s_v1, not kubernetes_node_group
 resource "nebius_storage_disk" "data_disk" { ... }
 resource "nebius_vpc_network" "net" { ... }
 resource "nebius_vpc_subnet" "subnet" { ... }
 ```
+
+**Critical:** The Kubernetes resource types are `nebius_mk8s_v1_cluster` and `nebius_mk8s_v1_node_group` — NOT `nebius_kubernetes_cluster` or `nebius_kubernetes_node_group`.
 
 ### Why Plan Shows Destroy + Recreate
 
@@ -59,6 +61,88 @@ When Terraform wants to destroy and recreate unexpectedly:
 - An **immutable field** was changed (e.g. GPU platform, boot disk type, zone, GPU cluster ID)
 - Immutable fields cannot be updated in-place — resource must be recreated
 - Check `terraform plan` output for `# forces replacement` annotation
+
+---
+
+## Managed Kubernetes Cluster Management
+
+### Creating a Cluster
+
+```bash
+nebius mk8s cluster create \
+  --name <cluster_name> \
+  --control-plane-version 1.33 \
+  --control-plane-subnet-id <subnet_id> \
+  --control-plane-endpoints-public-endpoint=true \
+  --control-plane-etcd-cluster-size 3
+```
+
+**Key defaults:**
+- High availability is **enabled by default** — cluster is created with **3 etcd stores**
+- Public endpoint is **enabled by default** — cluster is accessible from the internet
+- Default and recommended Kubernetes version: **1.33**
+
+**To restrict public endpoint access by IP:**
+```bash
+nebius mk8s cluster create \
+  --control-plane-endpoints-public-endpoint=true \
+  --control-plane-endpoints-public-endpoint-allowed-cidrs 192.168.0.0/24
+```
+
+**To disable public endpoint** (internal-only, must connect from same subnet):
+```bash
+--control-plane-endpoints-public-endpoint=false
+```
+
+### Modifying a Cluster
+
+Get cluster ID first:
+```bash
+export K8S_CLUSTER_ID=$(nebius mk8s cluster get-by-name \
+  --name <cluster_name> --format json | jq -r '.metadata.id')
+```
+
+**Mutable fields** (can be changed after creation):
+- Labels
+- Public endpoint on/off + allowed CIDRs
+- etcd cluster size
+
+**Immutable fields** (force cluster recreation):
+- Kubernetes version
+- Subnet
+- Zone/region
+
+### Deleting a Cluster
+
+```bash
+nebius mk8s cluster delete --id $K8S_CLUSTER_ID
+```
+
+### Terraform — Cluster Resource
+
+```hcl
+resource "nebius_mk8s_v1_cluster" "k8s" {
+  name      = "my-cluster"
+  parent_id = "<project_id>"
+  control_plane = {
+    endpoints = {
+      public_endpoint = {}  # remove this block to disable public access
+    }
+    version           = "1.33"
+    subnet_id         = "<subnet_id>"
+    etcd_cluster_size = 3
+  }
+}
+```
+
+### Exam Traps
+
+- etcd has **3 stores by default** (HA) — disabling HA gives 1 etcd store
+- HA does **not** affect cluster cost
+- Kubernetes version is **immutable** — changing it forces recreation
+- To restrict IP access: use `--control-plane-endpoints-public-endpoint-allowed-cidrs`
+- To connect from internet: public endpoint must be enabled
+- To connect only from same subnet: disable public endpoint
 
 ---
 
