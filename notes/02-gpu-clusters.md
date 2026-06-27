@@ -6,13 +6,24 @@ This is the heaviest domain — 35% of the exam. Focus here first.
 
 ## GPU Instance Families
 
-| GPU | Use Case |
-|-----|---------|
-| H100 SXM | Large-scale distributed training, flagship |
-| A100 80GB | Training and inference, high memory |
-| H200 | Latest gen, very large models |
+| GPU | Platform ID | Architecture | VRAM | InfiniBand | Use Case |
+|-----|------------|-------------|------|-----------|---------|
+| NVIDIA B300 SXM | `gpu-b300-sxm` | Blackwell Ultra | 288 GB HBM3e | 800 Gbps | Latest gen, largest models |
+| NVIDIA B200 SXM | `gpu-b200-sxm` / `gpu-b200-sxm-a` | Blackwell | 180 GB HBM3e | 400 Gbps | Large-scale training |
+| NVIDIA H200 SXM | `gpu-h200-sxm` | Hopper | 141 GB HBM3e | 400 Gbps | Distributed training, inference |
+| NVIDIA H100 SXM | `gpu-h100-sxm` | Hopper | 80 GB HBM3 | 400 Gbps | Distributed training |
+| NVIDIA RTX PRO 6000 | `gpu-rtx6000` | Blackwell PCIe | 96 GB GDDR7 | 400 Gbps | Inference, rendering |
+| NVIDIA L40S PCIe | `gpu-l40s-a` / `gpu-l40s-d` | Ada Lovelace PCIe | 48 GB GDDR6 | None | Inference, smaller workloads |
 
-Nebius does **not** offer V100 or older generation GPUs.
+**Nebius does NOT offer:** A100, V100, or older generation GPUs.
+
+**Preset naming convention:** `1gpu-16vcpu-200gb` = 1 GPU, 16 vCPUs, 200 GiB RAM
+
+**GPU cluster compatible presets (only 8-GPU presets work in clusters):**
+- B300: `8gpu-192vcpu-2768gb`
+- B200: `8gpu-160vcpu-1792gb`
+- H200: `8gpu-128vcpu-1600gb`
+- H100: `8gpu-128vcpu-1600gb`
 
 Each instance has a fixed GPU count — you select the platform and count at creation time. GPU count and platform type are **immutable** (changing them forces VM recreation in Terraform).
 
