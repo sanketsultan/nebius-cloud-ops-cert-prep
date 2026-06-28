@@ -2,6 +2,24 @@
 
 ---
 
+## What Is Each Platform?
+
+**Slurm (via Soperator)**
+A job scheduler and resource manager originally built for HPC (supercomputers). You submit jobs to a queue, Slurm allocates nodes, runs the job, then frees the nodes. Tightly coupled multi-node jobs (e.g. MPI training) are its sweet spot. On Nebius, Slurm runs via **Soperator** — a solution that combines Slurm + Kubernetes into one infrastructure.
+
+**Kubernetes (Managed Service for Kubernetes)**
+A container orchestration platform. You define workloads as pods/deployments and Kubernetes schedules, restarts, and scales them across nodes. Best for containerized workloads that need persistent services, autoscaling, or fine-grained resource control. On Nebius, GPU node groups run in Managed K8s clusters with NVIDIA operators installed.
+
+**Serverless AI**
+No infrastructure to manage — Nebius runs your workload on compute containers behind the scenes. Two types:
+- **Endpoint** — always-on, public URL, handles real-time requests
+- **Job** — one-off task, no URL, terminates on completion, billed per second
+
+**Applications (JupyterLab, MLflow)**
+Fully managed applications deployed with a few clicks. No cluster setup required. JupyterLab for interactive notebooks, MLflow for experiment tracking and model registry.
+
+---
+
 ## Slurm vs Kubernetes vs Serverless — When to Use Which
 
 | Scenario | Use |
